@@ -5,6 +5,10 @@ node_modules/
 dist/
 build/
 .gradle/
+.angular/
+
+# Generated code
+**/java-generated/
 
 # Test results
 test-results/
