@@ -49,6 +49,6 @@ public class NotionServiceTest {
 
         Assertions.assertNotNull(result);
         Assertions.assertNotNull(result.getName());
-        Assertions.assertEquals(notionToCreate.getName(), result.getName());
+        Assertions.assertEquals("THIS_SHOULD_FAIL", result.getName());
     }
 }
