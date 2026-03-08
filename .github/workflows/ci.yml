@@ -6,9 +6,15 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  REGISTRY: ghcr.io
+  ANGULAR_IMAGE: ghcr.io/${{ github.repository }}/angular-app
+  JAVA_IMAGE: ghcr.io/${{ github.repository }}/java-app
+
 permissions:
   contents: read
   checks: write
+  packages: write
 
 jobs:
   test:
@@ -56,3 +62,65 @@ jobs:
           name: Java Test Results
           path: test-results/G-rez-l-int-gration-et-la-livraison-continue-Application-Java/*.xml
           reporter: java-junit
+
+  build-angular:
+    name: Build & Push Angular
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.ANGULAR_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Angular image
+        uses: docker/build-push-action@v6
+        with:
+          context: G-rez-l-int-gration-et-la-livraison-continue-Application-Angular
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  build-java:
+    name: Build & Push Java
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.JAVA_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Java image
+        uses: docker/build-push-action@v6
+        with:
+          context: G-rez-l-int-gration-et-la-livraison-continue-Application-Java
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
