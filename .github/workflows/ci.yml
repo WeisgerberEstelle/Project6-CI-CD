@@ -38,7 +38,11 @@ jobs:
           cache: gradle
 
       - name: Run tests
-        run: bash run-tests.sh
+        id: tests
+        run: |
+          bash run-tests.sh
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
 
       - name: Upload test results
         if: always()
@@ -63,12 +67,19 @@ jobs:
           path: test-results/G-rez-l-int-gration-et-la-livraison-continue-Application-Java/*.xml
           reporter: java-junit
 
+      - name: Fail job if tests failed
+        if: steps.tests.outcome == 'failure'
+        run: exit 1
+
   build-angular:
     name: Build & Push Angular
     needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -93,6 +104,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=angular
+          cache-to: type=gha,mode=max,scope=angular
 
   build-java:
     name: Build & Push Java
@@ -100,6 +113,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -124,6 +140,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=java
+          cache-to: type=gha,mode=max,scope=java
 
   release-angular:
     name: Release Angular
@@ -136,7 +154,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -168,7 +186,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
