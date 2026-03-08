@@ -11,6 +11,8 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class JavaBasicAppApplication extends SpringBootServletInitializer {
 
+	public static final String VERSION = "1.1.0";
+
 	public static void main(String[] args) {
 		SpringApplication.run(JavaBasicAppApplication.class, args);
 	}

@@ -9,6 +9,7 @@ import { RouterOutlet } from '@angular/router';
 })
 export class AppComponent {
   public title = 'olympic-games-starter';
+  public version = '1.1.0';
 
   constructor() {}
 }
