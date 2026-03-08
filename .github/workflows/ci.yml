@@ -8,8 +8,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  ANGULAR_IMAGE: ghcr.io/${{ github.repository }}/angular-app
-  JAVA_IMAGE: ghcr.io/${{ github.repository }}/java-app
 
 permissions:
   contents: write
@@ -17,6 +15,20 @@ permissions:
   packages: write
 
 jobs:
+  setup:
+    name: Setup Image Names
+    runs-on: ubuntu-latest
+    outputs:
+      angular_image: ${{ steps.names.outputs.angular }}
+      java_image: ${{ steps.names.outputs.java }}
+    steps:
+      - name: Compute lowercase image names
+        id: names
+        run: |
+          REPO="${GITHUB_REPOSITORY,,}"
+          echo "angular=ghcr.io/${REPO}/angular-app" >> "$GITHUB_OUTPUT"
+          echo "java=ghcr.io/${REPO}/java-app" >> "$GITHUB_OUTPUT"
+
   test:
     name: Run Tests
     runs-on: ubuntu-latest
@@ -73,7 +85,7 @@ jobs:
 
   build-angular:
     name: Build & Push Angular
-    needs: test
+    needs: [test, setup]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -92,7 +104,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.ANGULAR_IMAGE }}
+          images: ${{ needs.setup.outputs.angular_image }}
           tags: |
             type=ref,event=branch
             type=sha,prefix={{branch}}-
@@ -109,7 +121,7 @@ jobs:
 
   build-java:
     name: Build & Push Java
-    needs: test
+    needs: [test, setup]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -128,7 +140,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.JAVA_IMAGE }}
+          images: ${{ needs.setup.outputs.java_image }}
           tags: |
             type=ref,event=branch
             type=sha,prefix={{branch}}-
@@ -209,7 +221,7 @@ jobs:
 
   retag-angular:
     name: Retag Angular Image with Version
-    needs: release-angular
+    needs: [release-angular, setup]
     if: needs.release-angular.outputs.new_release_published == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -222,13 +234,13 @@ jobs:
 
       - name: Pull, tag and push with semver
         run: |
-          docker pull ${{ env.ANGULAR_IMAGE }}:main
-          docker tag ${{ env.ANGULAR_IMAGE }}:main ${{ env.ANGULAR_IMAGE }}:${{ needs.release-angular.outputs.new_version }}
-          docker push ${{ env.ANGULAR_IMAGE }}:${{ needs.release-angular.outputs.new_version }}
+          docker pull ${{ needs.setup.outputs.angular_image }}:main
+          docker tag ${{ needs.setup.outputs.angular_image }}:main ${{ needs.setup.outputs.angular_image }}:${{ needs.release-angular.outputs.new_version }}
+          docker push ${{ needs.setup.outputs.angular_image }}:${{ needs.release-angular.outputs.new_version }}
 
   retag-java:
     name: Retag Java Image with Version
-    needs: release-java
+    needs: [release-java, setup]
     if: needs.release-java.outputs.new_release_published == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -241,6 +253,6 @@ jobs:
 
       - name: Pull, tag and push with semver
         run: |
-          docker pull ${{ env.JAVA_IMAGE }}:main
-          docker tag ${{ env.JAVA_IMAGE }}:main ${{ env.JAVA_IMAGE }}:${{ needs.release-java.outputs.new_version }}
-          docker push ${{ env.JAVA_IMAGE }}:${{ needs.release-java.outputs.new_version }}
+          docker pull ${{ needs.setup.outputs.java_image }}:main
+          docker tag ${{ needs.setup.outputs.java_image }}:main ${{ needs.setup.outputs.java_image }}:${{ needs.release-java.outputs.new_version }}
+          docker push ${{ needs.setup.outputs.java_image }}:${{ needs.release-java.outputs.new_version }}
