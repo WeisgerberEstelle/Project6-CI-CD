@@ -11,31 +11,9 @@ permissions:
   checks: write
 
 jobs:
-  detect-changes:
-    name: Detect changed projects
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
-    outputs:
-      angular: ${{ steps.filter.outputs.angular }}
-      java: ${{ steps.filter.outputs.java }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            angular:
-              - 'G-rez-l-int-gration-et-la-livraison-continue-Application-Angular/**'
-            java:
-              - 'G-rez-l-int-gration-et-la-livraison-continue-Application-Java/**'
-
-  test-angular:
-    name: Test Angular
-    needs: detect-changes
-    if: needs.detect-changes.outputs.angular == 'true'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: G-rez-l-int-gration-et-la-livraison-continue-Application-Angular
     steps:
       - uses: actions/checkout@v4
 
@@ -46,38 +24,6 @@ jobs:
           cache: npm
           cache-dependency-path: G-rez-l-int-gration-et-la-livraison-continue-Application-Angular/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
-
-      - name: Upload test report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: angular-test-report
-          path: G-rez-l-int-gration-et-la-livraison-continue-Application-Angular/reports/*.xml
-
-      - name: Publish test results
-        if: always()
-        uses: dorny/test-reporter@v1
-        with:
-          name: Angular Test Results
-          path: G-rez-l-int-gration-et-la-livraison-continue-Application-Angular/reports/*.xml
-          reporter: java-junit
-
-  test-java:
-    name: Test Java
-    needs: detect-changes
-    if: needs.detect-changes.outputs.java == 'true'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: G-rez-l-int-gration-et-la-livraison-continue-Application-Java
-    steps:
-      - uses: actions/checkout@v4
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -86,19 +32,27 @@ jobs:
           cache: gradle
 
       - name: Run tests
-        run: ./gradlew clean test
+        run: bash run-tests.sh
 
-      - name: Upload test report
+      - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: java-test-report
-          path: G-rez-l-int-gration-et-la-livraison-continue-Application-Java/build/test-results/test/*.xml
+          name: test-results
+          path: test-results/**/*.xml
 
-      - name: Publish test results
+      - name: Publish Angular test results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Angular Test Results
+          path: test-results/G-rez-l-int-gration-et-la-livraison-continue-Application-Angular/*.xml
+          reporter: java-junit
+
+      - name: Publish Java test results
         if: always()
         uses: dorny/test-reporter@v1
         with:
           name: Java Test Results
-          path: G-rez-l-int-gration-et-la-livraison-continue-Application-Java/build/test-results/test/*.xml
+          path: test-results/G-rez-l-int-gration-et-la-livraison-continue-Application-Java/*.xml
           reporter: java-junit
