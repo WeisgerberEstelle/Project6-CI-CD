@@ -54,7 +54,7 @@ Exclut `node_modules`, `dist`, `.git`, `.angular`, `coverage` pour que le build 
 ### docker-compose.yml
 Un seul service `app` qui build le Dockerfile et mappe le port 80.
 
-### Demo
+### Accès front
 Ouvrir http://localhost dans le navigateur. On voit l'application Olympic Games Participation Tracker.
 
 ---
@@ -76,7 +76,7 @@ Ouvrir http://localhost dans le navigateur. On voit l'application Olympic Games 
    - Volume nommé `pgdata` → les données persistent même si on supprime le conteneur
    - Health check : `pg_isready` vérifie toutes les 5s que la base est prête (5 tentatives max)
 
-### Demo
+### Accès back
 Ouvrir http://localhost:8080 dans le navigateur. L'API Workshop Organizer répond.
 
 ---
@@ -97,7 +97,7 @@ Ouvrir http://localhost:8080 dans le navigateur. L'API Workshop Organizer répon
 - Angular : `karma-junit-reporter` configuré dans `karma.conf.js`, génère les XML dans `reports/`
 - Java : Gradle génère nativement les rapports JUnit dans `build/test-results/test/`
 
-### Demo
+### Execution
 ```bash
 bash run-tests.sh
 # → Angular : 5 tests SUCCESS
@@ -138,11 +138,9 @@ setup → test → build-angular → release-angular → retag-angular
 - `type=sha,prefix={{branch}}-` → tag avec le SHA du commit (ex: `main-abc1234`)
 - Après release → tag avec la version sémantique (ex: `1.1.2`)
 
-### Demo
+### Actions
 Aller sur l'onglet Actions du repo GitHub :
 https://github.com/WeisgerberEstelle/Project6-CI-CD/actions
-Montrer un run vert avec tous les jobs réussis.
-
 ---
 
 ## Etape 6 — Releases et versioning sémantique
@@ -180,20 +178,22 @@ Chaque image est taguée avec la version sémantique (ex: `angular-app:1.1.2`).
 
 ## Résumé du flux complet
 
+### Push sur une branche (ex: feat/...)
 ```
-Développeur fait un commit (ex: "feat: add new endpoint")
-        ↓
-Push sur GitHub
-        ↓
-Pipeline CI déclenché automatiquement
-        ↓
-Tests Angular + Java exécutés
-        ↓
-Si tests OK → Build des images Docker → Push sur GHCR
-        ↓
-Si branche main → semantic-release analyse les commits
-        ↓
-Nouvelle version calculée → Release GitHub créée avec changelog
-        ↓
-Image Docker re-taguée avec la version sémantique
+Commit → Push → Tests → Build image → Push sur GHCR
+                                        Tags: feat-xxx + feat-xxx-abc1234
+                                        (pas de release, pas de retag)
+```
+
+### Merge sur main
+```
+Merge → Push → Tests → Build image → Push sur GHCR
+                                      Tags: main + main-abc1234
+                                             ↓
+                                      semantic-release analyse les commits
+                                             ↓
+                                      Release GitHub créée avec changelog
+                                             ↓
+                                      Retag image avec version sémantique
+                                      (ex: angular-app:1.2.0)
 ```
